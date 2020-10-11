@@ -85,3 +85,83 @@ instacart %>%
 	)
 ```
 
+
+## Problem 2
+
+### Fisrt, I will load, tidy, and otherwise wrangle the data.
+
+```{r echo=TRUE}
+acc_df = read_csv("~/R_columbia/p8105/p8105_hw3_xw2758/data/accel_data.csv") %>% 
+ janitor::clean_names() %>% 
+ pivot_longer(
+  activity_1:activity_1440,
+  names_to = "minute",
+  names_prefix = "activity.",
+  values_to = "activity_counts"
+ ) %>% 
+ mutate(
+  weekday_vs_weekend = case_when(
+   day %in% c("Monday","Tuesday","Wednesday","Thursday","Friday") ~ "weekday",
+   day  %in% c("Saturday","Sunday") ~ "weekend"
+  )
+ ) %>% 
+  mutate(
+    week = as.factor(week),
+    day_id = as.factor(day_id), 
+    day = as.factor(day),
+    minute = as.numeric(minute),
+    activity_counts = as.numeric(activity_counts),
+    weekday_vs_weekend = as.factor(weekday_vs_weekend)
+  )  %>% 
+ mutate(day = forcats::fct_relevel(day,
+                                   c("Monday","Tuesday","Wednesday","Thursday","Friday", "Saturday","Sunday"))
+         )
+```
+
+acc_df dataset has `r nrow(acc_df)` observations and `r ncol(acc_df)`variables, including `r names(acc_df)` .
+
+### Aggregate accross minutes to create a total activity variable for each day, and create a table showing these totals. Are any trends apparent
+
+```{r echo=TRUE}
+acc_df %>% 
+ group_by(week,day) %>% 
+  summarise(total_activity = sum(activity_counts)) %>% 
+  pivot_wider(
+    names_from = "day", 
+    values_from = "total_activity") %>% 
+ knitr::kable()
+```
+
+The acticivity counts are quite steady without too much change. However, the Saturday and Sunday in week 4&5 are quite low.
+
+### Make a single-panel plot that shows the 24-hour activity time courses for each day and use color to indicate day of the week. Describe in words any patterns or conclusions you can make based on this graph.
+
+```{r}
+acc_df %>% 
+  group_by(day_id, day, week) %>% 
+  ggplot(aes(x = minute, y = activity_counts, color = day, group = day_id)) + 
+  geom_point(alpha = 0.01) +
+  theme_minimal()+
+  theme(legend.position = "bottom") +
+  geom_smooth(se = F, method = 'loess') + 
+  labs(title = "Activities plot",
+       x="Time(mintute)",
+       y= "activity count",
+       caption = "24-hour activity acceleremoter data of 63 year-old male with BMI 25") + 
+  scale_x_continuous(
+    breaks = c(0,300,600,900,1200,1500), 
+    labels = c("0", "300", "600", "900", "1200", "1500"),
+    limits = c(0, 1500)) + 
+  scale_y_continuous(
+    trans = "log",
+    breaks = c(0,2000,4000,6000,8000,10000), 
+    labels = c("0", "2000", "4000", "6000", "8000","10000"),
+    limits = c(0, 8000))
+```
+
+
+
+
+
+
+
