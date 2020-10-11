@@ -8,6 +8,7 @@ output: github_document
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(p8105.datasets)
+library(patchwork)
 
 knitr::opts_chunk$set(
 	echo = TRUE,
@@ -159,8 +160,114 @@ acc_df %>%
 
 Conclusions: The old men seldom exercise on weekends and actively exercise with longer time from 8am-20pm during Weekdays. Monday is an exception that he active in the night.
 
+## Problem 3
+
+load data
+
+```{r}
+data("ny_noaa")
+```
+
+### Do some data cleaning
+
+```{r}
+ ny_noaa_tidy = ny_noaa %>% 
+ separate(date, into = c("year", "month", "day"))
+ ny_noaa_tidy = ny_noaa_tidy %>% 
+  mutate_at(vars(year, month, day), as.factor) %>%  
+  mutate_at(vars(tmax, tmin, prcp, snow, snwd), as.numeric) %>% 
+  mutate(
+    prcp = prcp / 10,
+    tmax = tmax / 10,
+    tmin = tmin / 10,
+  )
+ 
+```
 
 
+```{r}
+ snowfall = ny_noaa_tidy %>% 
+  filter(snow != "NA") %>% 
+ count(snow) %>% 
+ arrange(desc(n))
+```
 
+The most commonly observed values is "0" because most of days are not snowy.
 
+### plot of the average max temperature in January and July
 
+```{r}
+panel_plot = ny_noaa_tidy %>% 
+ filter(month %in% c("01","07")) %>% 
+ group_by(year, month, id) %>% 
+  summarize(
+    mean_tmax = mean(tmax)) %>% 
+     drop_na() %>% 
+ ggplot(aes(x = year, y = mean_tmax, color = id, group = id)) +
+  geom_point(alpha = 0.5) + 
+  theme_minimal() +
+  theme(legend.position = "bottom") +
+  theme(legend.position = 'none',
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+  labs(title = "plot of the average max temperature in January and July",
+       x = "Year",
+       y = "Temperature(C)",
+       caption = "temperate date" )+
+  facet_grid(~ month)
+panel_plot
+```
+
+From 1981 to 1989 and 2003 to 2007, the average max temperature increases in January, while July.is much more steady In 1994 and 2003, temperature in January decrease widely. There are some outliners in January 1982, July 1988 and July 2004.
+
+### Make a two-panel plot 
+
+#### plot of tmax vs tmin for the full dataset 
+
+```{r}
+vs_plot = ny_noaa_tidy %>% 
+ ggplot(aes(x = tmax, y = tmin)) + 
+  geom_bin2d() +
+   labs(title = "plot of tmax vs tmin for the full dataset ",
+       x = "max temperature",
+       y = "min temperature",
+       caption = "temperate comparison")
+
+vs_plot
+```
+
+#### a plot showing the distribution of snowfall values greater than 0 and less than 100 separately by year
+
+```{r}
+sn_plot = ny_noaa_tidy %>% 
+ filter(snow>0, snow<100) %>% 
+ ggplot(aes(x=year, y= snow, fill = year))+
+ geom_violin(alpha= .5)+
+  stat_summary(fun = "median", color = "blue") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1)) +
+ labs(title = "snowfall distribution(between 0 and 100) by year",
+       x = "Year",
+       y = "Snowfall(mm)")
+ 
+sn_plot
+```
+
+Finally, marge two plots!
+
+```{r}
+vs_plot/sn_plot
+```
+
+The dataset has `r nrow(ny_noaa)` observations and `r ncol(ny_noaa)` variables, including `r names(ny_noaa)`.
+
+Here is the proportion of missing values
+
+```{r}
+ny_noaa %>% 
+  summarise(prcp_na = (sum(is.na(prcp)))/nrow(ny_noaa),
+            snow_na = (sum(is.na(snow)))/nrow(ny_noaa),
+            snwd_na = (sum(is.na(snwd)))/nrow(ny_noaa),
+            tmax_na = (sum(is.na(tmax)))/nrow(ny_noaa),
+            tmin_na = (sum(is.na(tmin)))/nrow(ny_noaa))
+```
+
+Almost half of maxium and minium temperature are missing, it is a big issue.
