@@ -263,7 +263,7 @@ Here is the proportion of missing values
 
 ```{r}
 ny_noaa %>% 
-  summarise(prcp_na = (sum(is.na(prcp)))/nrow(ny_noaa),
+  summarize(prcp_na = (sum(is.na(prcp)))/nrow(ny_noaa),
             snow_na = (sum(is.na(snow)))/nrow(ny_noaa),
             snwd_na = (sum(is.na(snwd)))/nrow(ny_noaa),
             tmax_na = (sum(is.na(tmax)))/nrow(ny_noaa),
